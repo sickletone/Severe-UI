@@ -3342,123 +3342,6 @@ local function AddListBox(c, height, emptyText, onSelect)
     }
 end
 
---// Pages \\--
-
-
-local function pageFor(key, offset)
-    return CreatePage(key, offset)
-end
-
--- Main: combat content (example components, all wired to the new library).
-do
-    local left, right = pageFor("Main", 0)
-
-    local card = Section(left, "Combat", "Main")
-    local aimbot = AddToggle(card, "Enable Aimbot System", true, {
-        Gear = true,
-        Keybind = {Key = "Q", Mode = "Toggle"}
-    })
-
-    local aimDep = AddDependency(card, aimbot)
-    AddToggle(aimDep, "Sticky Aim", true, {Hint = "Stays locked on the same target"})
-    AddSlider(aimDep, "Sticky Strength", 0, 100, 50, {Sub = true, Suffix = "%"})
-
-    local motion = AddToggle(card, "Aim Motion", false, {Hint = "Adds movement while aiming"})
-    local motionDep = AddDependency(card, motion)
-    AddSlider(motionDep, "Motion Speed", 0, 10, 10, {Precision = 3, Sub = true, Hint = "How fast the motion plays"})
-    AddSlider(motionDep, "Motion Intensity", 0, 100, 100, {Precision = 3, Sub = true, Hint = "How strong the motion is"})
-
-    card = Section(left, "Additional", "Main")
-    AddToggle(card, "Reload Check", false, {Hint = "Pauses while reloading"})
-    AddToggle(card, "Mouse Teleport", false, {Hint = "Jumps the cursor to the target"})
-    AddToggle(card, "Snaplines", false, {Hint = "Draws a line to each target", Color = Color3.fromRGB(255, 255, 255)})
-    AddToggle(card, "Show Field Of View", true, {Color = Color3.fromRGB(60, 120, 255)})
-
-    local advanced = AddSubWindow(card, "Advanced Aim", "Advanced Aim", {Width = 400, Height = 360})
-    AddToggle(advanced.Container, "Ghost Aim", false, {Hint = "Aims without moving the camera"})
-    AddSlider(advanced.Container, "Ghost Strength", 0, 100, 40, {Precision = 0, Suffix = "%"})
-    AddDropdown(advanced.Container, "Ghost Mode", {"Soft", "Hard", "Adaptive"}, "Soft")
-
-    card = Section(left, "Targeting", "Main")
-    AddDropdown(card, "Style", {"Exponential", "Linear", "Cubic", "Sine"}, "Exponential")
-    AddDropdown(card, "Part", {
-        "HumanoidRootPart", "Closest", "Random", "Head", "Left Arm", "Right Arm",
-        "Left Leg", "Right Leg", "Torso", "UpperTorso", "LowerTorso", "LeftFoot", "RightFoot"
-    }, "HumanoidRootPart")
-    AddDualSlider(card, "Target Range", 0, 1000, 50, 400, {Precision = 0, Hint = "Min and max distance to pick targets"})
-
-    local tabs = AddTabBox(card, {Align = "Center", Tabs = {"Players", "NPCs"}, Default = "Players"})
-    AddToggle(tabs.Tab("Players"), "Team Check", false, {Hint = "Skips your teammates"})
-    AddToggle(tabs.Tab("Players"), "Visible Only", true)
-    AddToggle(tabs.Tab("NPCs"), "Target NPCs", false)
-    AddSlider(tabs.Tab("NPCs"), "NPC Priority", 0, 10, 3, {Precision = 0})
-
-    card = Section(right, "Aim Settings", "Main")
-    AddSlider(card, "Aimbot Distance", 0, 5000, 4999.999, {Precision = 3})
-    AddSlider(card, "Smoothness", 0, 10, 2.517, {Precision = 3})
-    AddSlider(card, "Sensitivity", 0, 1, 0.758, {Precision = 3})
-    AddSlider(card, "Delay", 0, 100, 0, {Precision = 0})
-    AddColorPicker(card, "FOV Color", Color3.fromRGB(60, 120, 255), 1, {Hint = "Color of the FOV circle"})
-
-    card = Section(right, "Movement", "Main")
-    AddDropdown(card, "System", {"Dynamic", "Static", "Adaptive"}, "Dynamic", {Hint = "How the aim system behaves"})
-    AddSlider(card, "Vertical", -10, 10, 0, {Precision = 3})
-    AddToggle(card, "Ping Interpolation", false, {Hint = "Compensates for latency"})
-    AddToggle(card, "Resolver", false, {Hint = "Corrects desynced positions"})
-    AddToggle(card, "Prediction", false, {Hint = "Leads moving targets"})
-end
-
--- Visuals
-do
-    local left, right = pageFor("Visuals", 0)
-
-    local card = Section(left, "Players", "Visuals")
-    AddToggle(card, "Enable Visuals", false)
-    AddToggle(card, "Player Boxes", false, {Color = Color3.fromRGB(255, 255, 255)})
-    AddToggle(card, "Player Names", true, {Color = Color3.fromRGB(255, 255, 255)})
-    AddToggle(card, "Health Display", true, {Color = Color3.fromRGB(60, 200, 120)})
-    AddToggle(card, "Distance Display", false, {Color = Color3.fromRGB(255, 225, 100)})
-
-    card = Section(right, "Display", "Visuals")
-    AddSlider(card, "Visual Range", 0, 5000, 1000, {Precision = 0})
-    AddToggle(card, "Team Check", false, {Hint = "Skips your teammates"})
-    AddToggle(card, "Highlight Target", true, {Color = Color3.fromRGB(255, 110, 110)})
-    AddDropdown(card, "Text Style", {"Regular", "Bold", "Outline"}, "Regular")
-end
-
--- World
-do
-    local left, right = pageFor("World", 0)
-
-    local card = Section(left, "World", "World")
-    local world = AddToggle(card, "Enable World Settings", false)
-    local worldDep = AddDependency(card, world)
-    AddToggle(worldDep, "Full Brightness", false)
-    AddToggle(worldDep, "Remove Fog", false)
-    AddToggle(card, "World Visual Effects", true)
-
-    card = Section(right, "Environment", "World")
-    AddSlider(card, "Brightness", 0, 5, 2, {Precision = 1})
-    AddSlider(card, "Clock Time", 0, 24, 14, {Precision = 1})
-    AddSlider(card, "Fog End Distance", 100, 100000, 100000, {Precision = 0})
-end
-
--- Misc
-do
-    local left, right = pageFor("Misc", 0)
-
-    local card = Section(left, "Miscellaneous", "Misc")
-    AddToggle(card, "Enable Miscellaneous", true)
-    AddToggle(card, "Auto Jump", false)
-    AddToggle(card, "No Camera Shake", false)
-    AddToggle(card, "Performance Mode", false)
-    AddToggle(card, "Show Notifications", true)
-
-    card = Section(right, "Input", "Misc")
-    AddKeyPicker(card, "Action Key", "E", "Toggle")
-    AddDropdown(card, "Input Mode", {"Toggle", "Hold"}, "Toggle", {Hint = "Keybind mode for the action"})
-    AddSlider(card, "Input Delay", 0, 1, 0, {Precision = 2})
-end
 
 --// Settings: sub tabs (Interface / Configs / Theme) \\--
 
@@ -5086,6 +4969,12 @@ return {
     AddTextBox = AddTextBox,
     AddButton = AddButton,
     AddListBox = AddListBox,
+    AddDualSlider = AddDualSlider,
+    AddKeyPicker = AddKeyPicker,
+    AddDependency = AddDependency,
+    AddGroup = AddGroup,
+    AddTabBox = AddTabBox,
+    AddSubWindow = AddSubWindow,
     Palettes = Palettes,
     PresetOrder = PresetOrder,
     ThemeOverrides = ThemeOverrides,
