@@ -38,6 +38,7 @@ return function(Library)
                 if isfile(AUTOLOAD_FILE) then
                     return readfile(AUTOLOAD_FILE)
                 end
+                return nil
             end)
 
             if ok and type(name) == "string" then

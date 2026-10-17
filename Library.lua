@@ -550,7 +550,6 @@ end
 local WIN_MIN_W, WIN_MIN_H = 560, 540
 local WIN_MAX_W, WIN_MAX_H = 1200, 1000
 local CORNER_MAIN = 18
-local CARD_MAX_BODY = 255
 
 local WinW, WinH = 700, 680
 local AutoResize = true
@@ -589,7 +588,6 @@ local ActiveTab = "Main"
 local ActiveSub = "Interface"
 
 local refreshKeybindList
-local saveConfigFile
 local saveWindowState
 local setMenuOpen
 local applyParticlePreset
@@ -845,7 +843,13 @@ ThemeButton = function(mode, iconValue, x)
     ThemeButtons[mode] = {Button = button, Icon = icon}
 
     button.Activated:Connect(function()
-        Settings["Theme Preset"].Set(mode, true)
+        -- "Theme Preset" is registered by the ThemeManager addon; fall back to SetTheme without it.
+        local entry = Settings["Theme Preset"]
+        if entry then
+            entry.Set(mode, true)
+        else
+            SetTheme(mode, AccentOverride)
+        end
     end)
 end
 
@@ -2068,7 +2072,6 @@ local function AddToggle(c, name, default, opts)
 
         toggle.Keybind = kp
         registerSetting(name .. " Keybind", kp.Get, kp.Set)
-        kp.Apply()
     end
 
     local button = New("TextButton", {
@@ -2126,8 +2129,9 @@ local function AddToggle(c, name, default, opts)
         toggle.Set(value, true)
     end)
 
-    if opts.Keybind and toggle.Keybind.Mode == "Always" then
-        toggle.Set(true, true)
+    -- Always-mode keybinds fire on creation. Do this after toggle.Set exists.
+    if toggle.Keybind then
+        toggle.Keybind.Apply()
     end
 
     return toggle
@@ -2705,6 +2709,12 @@ local function AddDropdown(c, name, options, default, opts)
 
         for index, option in ipairs(options) do
             addOption(index, option)
+        end
+
+        -- Keep the value valid: if the selection is no longer offered, fall back to the first option.
+        if not table.find(options, selected) then
+            selected = options[1]
+            valueLabel.Text = selected or ""
         end
 
         refreshItems()
@@ -4584,6 +4594,8 @@ end)
 
 end
 
+local File = {}
+
 do
 
 local CONFIG_DIR = "SEVERESettings"
@@ -4609,6 +4621,7 @@ local function readJson(path)
         if isfile(path) then
             return readfile(path)
         end
+        return nil
     end)
 
     if not ok or type(raw) ~= "string" or raw == "" then
@@ -4635,6 +4648,12 @@ local function writeJson(path, data)
         pcall(writefile, path, encoded)
     end
 end
+
+File.Dir = CONFIG_DIR
+File.CanFile = canFile
+File.EnsureDir = ensureDir
+File.ReadJson = readJson
+File.WriteJson = writeJson
 
 saveWindowState = function()
     if not canFile() then return end
@@ -4833,11 +4852,5 @@ return {
     GetTheme = function() return Theme end,
     GetThemeName = function() return ThemeName end,
     GetAccentOverride = function() return AccentOverride end,
-    File = {
-        Dir = CONFIG_DIR,
-        CanFile = canFile,
-        EnsureDir = ensureDir,
-        ReadJson = readJson,
-        WriteJson = writeJson
-    }
+    File = File
 }
