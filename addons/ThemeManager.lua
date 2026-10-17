@@ -1,10 +1,3 @@
--- SEVERE ThemeManager addon
--- Adds the Settings > Theme page: theme presets, accent color, per-color
--- overrides, and saving / loading / deleting named themes.
---
--- Usage (after loading Library.lua):
---   loadstring(game:HttpGet(REPO .. "addons/ThemeManager.lua"))()(Library)
-
 return function(Library)
     local Settings = Library.Settings
     local Notify = Library.Notify
@@ -17,7 +10,7 @@ return function(Library)
     local THEME_FILE = File.Dir .. "/themes.json"
 
     local MemoryThemes = {}
-    local ThemeRows = {}  -- color pickers on this page, by palette key
+    local ThemeRows = {}
     local PresetDropdown
     local ThemeNameBoxObj
     local ThemeListObj
@@ -44,7 +37,6 @@ return function(Library)
         return name
     end
 
-    -- Re-reads every color dot on the page after the theme changes.
     local function refreshRows()
         local theme = Library.GetTheme()
 
@@ -52,8 +44,6 @@ return function(Library)
             dot.Set(theme[key], 1, false)
         end
     end
-
-    --// Actions \\--
 
     local function saveTheme()
         local name = validName(ThemeNameBoxObj.Text)
@@ -135,8 +125,6 @@ return function(Library)
         Notify("Deleted theme: " .. name)
     end
 
-    --// Page \\--
-
     Library.AddSettingsSub("Theme", 3)
 
     local left, right = Library.CreatePage("Settings/Theme", 38)
@@ -145,7 +133,6 @@ return function(Library)
 
     PresetDropdown = Library.AddDropdown(card, "Theme Preset", PresetOrder, Library.GetThemeName(), {
         Callback = function(value)
-            -- A preset replaces custom colors. Glass also turns transparency up.
             for key in pairs(ThemeOverrides) do
                 ThemeOverrides[key] = nil
             end
@@ -223,8 +210,6 @@ return function(Library)
     ThemeListObj = Library.AddListBox(card, 110, "No saved themes yet", function() end)
     Library.AddButton(card, "Load theme", loadTheme)
     Library.AddButton(card, "Delete theme", deleteTheme)
-
-    --// Startup \\--
 
     MemoryThemes = File.ReadJson(THEME_FILE) or {}
     listThemes()

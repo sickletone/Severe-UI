@@ -1,10 +1,3 @@
--- SEVERE SaveManager addon
--- Adds the Settings > Configs page: save, overwrite, load, rename and delete
--- configs, set an autoload config, and copy/paste configs via the clipboard.
---
--- Usage (after loading Library.lua):
---   loadstring(game:HttpGet(REPO .. "addons/SaveManager.lua"))()(Library)
-
 return function(Library)
     local HttpService = game:GetService("HttpService")
 
@@ -22,8 +15,6 @@ return function(Library)
 
     local ConfigListObj
     local ConfigNameBoxObj
-
-    --// Storage \\--
 
     local function writeConfigs()
         File.WriteJson(CONFIG_FILE, MemoryConfigs)
@@ -55,9 +46,6 @@ return function(Library)
         end
     end
 
-    --// Snapshots \\--
-
-    -- Snapshot: every registered setting (toggles, sliders, dropdowns, keybinds, colors).
     local function snapshot()
         local result = {}
 
@@ -76,7 +64,6 @@ return function(Library)
     local function applySnapshot(data)
         if type(data) ~= "table" then return false end
 
-        -- Presets go first so the saved sliders and colors that follow win.
         local first = {"Theme Preset", "Accent Color", "Particle Preset", "Show Mobile Buttons"}
 
         for _, name in ipairs(first) do
@@ -116,8 +103,6 @@ return function(Library)
         name = name:gsub("[/\\:*?\"<>|]", "_")
         return name
     end
-
-    --// Actions \\--
 
     local function saveConfig(overwrite)
         local name = validName(ConfigNameBoxObj.Text ~= "" and ConfigNameBoxObj.Text or ConfigName)
@@ -247,8 +232,6 @@ return function(Library)
         return ClipboardFallback
     end
 
-    --// Page \\--
-
     Library.AddSettingsSub("Configs", 2)
 
     local left, right = Library.CreatePage("Settings/Configs", 38)
@@ -332,8 +315,6 @@ return function(Library)
         applySnapshot(decoded)
         Notify("Pasted config values")
     end)
-
-    --// Startup \\--
 
     loadFiles()
 

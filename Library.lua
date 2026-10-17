@@ -1,11 +1,3 @@
--- SEVERE UI  |  v1.0.0
--- Tabs, sub tabs (Settings: Interface / Configs / Theme), tab boxes (left /
--- center / right), dependency boxes, sub sliders, dual sliders, dropdowns,
--- color picker, keybinds (Toggle / Hold / None / Always), sub windows,
--- tooltips, menu particles, theme manager, configs, watermark, keybind list,
--- mobile buttons, drag-to-resize window with auto resizing.
--- Pure ASCII on purpose: some executors read files as latin-1 and garble symbols.
-
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
@@ -31,8 +23,6 @@ end
 
 local Parent = getParent()
 
---// Teardown of a previous run \\--
-
 local Env = (type(getgenv) == "function" and getgenv()) or _G
 if type(Env.SEVEREUnload) == "function" then
     pcall(Env.SEVEREUnload)
@@ -50,8 +40,6 @@ for _, name in ipairs({"SEVEREUI", "SEVEREOverlay", "SEVEREParticles", "SEVEREWa
     local old = Parent:FindFirstChild(name)
     if old then old:Destroy() end
 end
-
---// Themes \\--
 
 local Palettes = {
     Dark = {
@@ -160,9 +148,9 @@ local Theme = {}
 local ThemeName = "Dark"
 local AccentOverride = nil
 local Binds = {}
-local ThemeOverrides = {}  -- per-color edits from the Theme tab, applied on top of the preset
-local MenuStyle = {Alpha = 0, Radius = 18}  -- Alpha: window transparency (0-1), Radius: corner radius
-local applyGlassFx  -- blur and gloss for the Glass theme, defined with the window
+local ThemeOverrides = {}
+local MenuStyle = {Alpha = 0, Radius = 18}
+local applyGlassFx
 
 local function buildTheme(name, accent)
     local source = Palettes[name] or Palettes.Dark
@@ -212,14 +200,12 @@ local function SetTheme(name, accent)
     end
 end
 
--- Dyn runs fn now and again whenever the theme changes.
 local function Dyn(obj, fn)
     table.insert(Binds, {obj = obj, fn = fn})
     fn()
     return obj
 end
 
--- Surfaces take the menu transparency, so the whole window can go glassy.
 local SURFACE_KEYS = {Background = true, Header = true, Panel = true}
 
 local function Paint(obj, prop, key)
@@ -234,8 +220,6 @@ end
 
 SetTheme("Dark")
 
---// Helpers \\--
-
 local function New(class, props, parent)
     local object = Instance.new(class)
 
@@ -247,7 +231,6 @@ local function New(class, props, parent)
     return object
 end
 
--- Scalable corners follow the Menu corner radius setting. Base radius is kept per corner.
 local ScaledCorners = {}
 
 local function Corner(object, radius, scalable)
@@ -295,9 +278,6 @@ local function Label(parent, text, size, colorKey, font)
     Paint(label, "TextColor3", colorKey or "White")
     return label
 end
-
---// Icons \\--
--- Icon values can be a Lucide name, "rbxassetid://123" / "123", or a short ASCII symbol.
 
 local ICON_CONFIG = {
     Toolbar = {
@@ -369,7 +349,6 @@ function Provider.Create(parent, iconName, size, color, instName)
         return nil
     end
 
-    -- Preferred: icon font. Scales cleanly with TextSize and recolors with TextColor3.
     if type(Lucide.GetFontAsset) == "function" then
         local ok, asset = pcall(Lucide.GetFontAsset, iconName)
 
@@ -392,7 +371,6 @@ function Provider.Create(parent, iconName, size, color, instName)
         end
     end
 
-    -- Fallback: spritesheet (used when getcustomasset is unavailable).
     if type(Lucide.GetAsset) == "function" then
         local ok, asset = pcall(Lucide.GetAsset, iconName, size)
 
@@ -444,7 +422,6 @@ local function setIconColor(icon, color)
     end
 end
 
--- colorSource is a theme key ("Dim") or a function returning a Color3.
 local function resolveColor(source)
     if type(source) == "function" then
         return source()
@@ -504,15 +481,9 @@ end
 
 end
 
---// Input drag manager \\--
--- One shared move/end pair handles sliders, color picker, windows and the grip.
-
 local ActiveDrag = nil
 
 local function beginDrag(input, onMove, onEnd)
-    -- GetMouseLocation and event positions can differ by the top-bar inset. The
-    -- difference is measured at press time and added to polled positions, so
-    -- both sources agree and the drag does not drift.
     local mouse = UIS:GetMouseLocation()
 
     ActiveDrag = {
@@ -546,8 +517,6 @@ Connect(UIS.InputEnded, function(input)
     end
 end)
 
--- Mouse drags also follow the cursor every frame while the button is held, so
--- the color picker, sliders and windows track the mouse without extra clicks.
 Connect(RunService.RenderStepped, function()
     local drag = ActiveDrag
 
@@ -567,7 +536,6 @@ Connect(RunService.RenderStepped, function()
     end
 end)
 
--- Scrollbars: thin on PC, easier to grab on touch.
 local function BarThickness()
     return UIS.TouchEnabled and 4 or 2
 end
@@ -578,8 +546,6 @@ local function isPress(input)
     return input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch
 end
-
---// State \\--
 
 local WIN_MIN_W, WIN_MIN_H = 560, 540
 local WIN_MAX_W, WIN_MAX_H = 1200, 1000
@@ -607,14 +573,14 @@ local ParticleState = {
     Accumulator = 0,
     Active = {}
 }
-local Settings = {}      -- name -> {Get = fn, Set = fn}
-local Cards = {}         -- section records used by search
-local Pages = {}         -- page key -> ScrollingFrame
-local BodyUpdaters = {}  -- re-measure card bodies after a scale or size change
-local Sized = {}         -- row records that compact mode shrinks
-local Layouts = {}       -- column list layouts that compact mode spaces
+local Settings = {}
+local Cards = {}
+local Pages = {}
+local BodyUpdaters = {}
+local Sized = {}
+local Layouts = {}
 local DepGates = setmetatable({}, {__mode = "k"})
-local Windows = {}       -- sub windows, so they can be closed together
+local Windows = {}
 local KeyPickerList = {}
 local ListeningKey = nil
 
@@ -629,8 +595,6 @@ local setMenuOpen
 local applyParticlePreset
 local switchPage
 local Notify
-
---// Window \\--
 
 local GUI = New("ScreenGui", {
     Name = "SEVEREUI",
@@ -665,8 +629,6 @@ Stroke(Main, "Border", 0.15)
 local Scale = New("UIScale", {Scale = 1}, Main)
 
 do
--- Glass look: a frosted blur behind the window (on the camera) and a soft gloss
--- over it. Both are on only while the iOS 27 Glass theme is selected.
 local GlassBlur = New("BlurEffect", {Name = "SEVEREGlassBlur", Size = 14, Enabled = false}, workspace.CurrentCamera)
 
 local GlassGloss = New("UIGradient", {
@@ -718,11 +680,6 @@ end)
 
 refreshScale()
 
--- Header
-
--- Title and logo are set here in the script source, not in the menu.
--- Title: "Left", "Center" or "Right". LogoId: the asset number, or "" for no logo.
--- LogoSide: "Left" or "Right" of the title. LogoSize: pixels.
 local HeaderCfg = {
     Name = "SEVERE",
     Version = ": 1.0.0",
@@ -753,8 +710,6 @@ local HeaderPatch = New("Frame", {
 
 Paint(HeaderPatch, "BackgroundColor3", "Header")
 
--- Title row: optional logo, title and version. Title Position and Logo
--- Position move the row. Logo Size sizes the image.
 local TitleGroup = New("Frame", {
     Name = "TitleGroup",
     Position = UDim2.fromOffset(22, 0),
@@ -818,8 +773,6 @@ local HeaderLine = New("Frame", {
 }, Header)
 
 Paint(HeaderLine, "BackgroundColor3", "Border")
-
--- Toolbar
 
 end
 
@@ -919,8 +872,6 @@ New("UIPadding", {
     PaddingRight = UDim.new(0, 10)
 }, SearchBox)
 
--- Content
-
 end
 
 local Content = New("Frame", {
@@ -929,14 +880,8 @@ local Content = New("Frame", {
     BackgroundTransparency = 1
 }, Main)
 
--- Components Size scales the pages (sliders, toggles, text) as one unit.
 local ContentScale = New("UIScale", {Scale = 1}, Content)
 
--- Layers: particles sit above cards (they never block input), dim and
--- popups sit above everything else.
-
--- Particles cover the whole screen, not just the window. They sit above the
--- game and below the menu, and are never clipped by the window.
 local ParticleGui = New("ScreenGui", {
     Name = "SEVEREParticles",
     ResetOnSpawn = false,
@@ -963,8 +908,6 @@ local PopupLayer = New("Frame", {
     ZIndex = 200
 }, Main)
 
--- One rounded dim over the window. The old four-strip dim used square
--- rectangles, which broke the window corners whenever a popup opened.
 local DimLayer = New("TextButton", {
     Name = "DimLayer",
     Size = UDim2.fromScale(1, 1),
@@ -1039,7 +982,6 @@ local function tipsEnabled()
     return setting == nil or setting.Get()
 end
 
--- Hint: hover on PC shows the tip, a tap on touch shows it for 2.5 seconds.
 Hint = function(container, text)
     local hint = New("TextLabel", {
         Name = "Hint",
@@ -1076,7 +1018,6 @@ Hint = function(container, text)
     return hint
 end
 
--- Notify: stacked toasts in the top right. Honors the Show Notifications setting.
 local NotifyHolder = New("Frame", {
     Name = "Notifications",
     AnchorPoint = Vector2.new(1, 0),
@@ -1107,8 +1048,6 @@ Notify = function(message, title)
 
     notifyCount += 1
 
-    -- Each toast slides in, runs a progress bar for its lifetime, then slides
-    -- out and collapses so the stack closes up. Colors follow the theme.
     local slot = New("Frame", {
         Name = "Toast",
         Size = UDim2.new(1, 0, 0, TOAST_H),
@@ -1198,8 +1137,6 @@ Notify = function(message, title)
 end
 end
 
--- Popups: dim everything except the active card, float the popup on top.
-
 local Popup = {Active = nil}
 
 DimLayer.Activated:Connect(function()
@@ -1255,7 +1192,6 @@ end
 
 local openModeMenu, openPicker, KeyModes
 do
---// Shared popups: mode menu, color picker, dropdown lists are built per use \\--
 
 local ModeMenu = New("Frame", {
     Name = "KeyModeMenu",
@@ -1324,8 +1260,6 @@ openModeMenu = function(kp, anchor, spot)
     placeBelow(ModeMenu, anchor, 120, 120, true)
     Popup.Open(spot, ModeMenu, nil)
 end
-
--- Color picker popup (shared). Saturation/value box, hue, alpha, hex, swatches.
 
 local PALETTE_COLORS = {
     Color3.fromRGB(255, 255, 255),
@@ -1614,11 +1548,6 @@ end
 
 end
 
---// Cards, rows, and containers \\--
--- A container is {Body = frame, Spot = frame, HasRows = bool}. Components take
--- a container, so they work the same in cards, tab boxes, dependency boxes and
--- sub windows.
-
 local function Divider(c)
     if c.HasRows then
         local line = New("Frame", {
@@ -1633,7 +1562,6 @@ local function Divider(c)
     c.HasRows = true
 end
 
--- Makes a row and registers its base height so compact mode can shrink it.
 local function Row(c, kind, height, cut)
     Divider(c)
 
@@ -1664,7 +1592,6 @@ local function HeadRow(parent, size, position)
     return head
 end
 
--- Duplicate names get a numbered suffix so every setting is saved and loaded.
 local function registerSetting(name, get, set)
     local key = name
     local n = 1
@@ -1677,7 +1604,6 @@ local function registerSetting(name, get, set)
     Settings[key] = {Get = get, Set = set}
 end
 
--- Card: a rounded section with its own scrolling body.
 local function Section(column, name, pageKey)
     local card = New("Frame", {
         Name = "Card",
@@ -1732,8 +1658,6 @@ local function Section(column, name, pageKey)
     return {Body = body, Spot = card, HasRows = false, Card = card}
 end
 
--- Group box: a titled, outlined box inside a card. Components go in the
--- returned container, the same way they go in a card.
 local function AddGroup(c, title)
     local group = New("Frame", {
         Name = "Group",
@@ -1776,7 +1700,6 @@ local function AddGroup(c, title)
     return {Body = body, Spot = group, HasRows = false}
 end
 
--- Columns: a page holds left and right columns of cards.
 local function CreatePage(key, topOffset)
     local page = New("ScrollingFrame", {
         Name = key:gsub("/", "_") .. "Page",
@@ -1822,7 +1745,6 @@ local function CreatePage(key, topOffset)
     return column(false), column(true)
 end
 
--- Compact mode shrinks row heights and card spacing.
 local function applyCompact()
     for _, record in ipairs(Sized) do
         if record.Frame.Parent then
@@ -1836,8 +1758,6 @@ local function applyCompact()
 
     refreshBodies()
 end
-
---// Color dot (used by toggles and standalone color rows) \\--
 
 local function ColorDot(parent, color, alpha, order, onChange)
     local dot = {Color = color, Alpha = alpha or 1}
@@ -1877,10 +1797,6 @@ local function ColorDot(parent, color, alpha, order, onChange)
     return dot
 end
 
---// Keybinds \\--
--- Modes: Toggle (press flips), Hold (active while held), Always (forced on),
--- None (no effect). PC: right-click the key button. Mobile: hold it.
-
 local KEY_SHORT = {
     LeftControl = "L-Ctrl",
     RightControl = "R-Ctrl",
@@ -1911,7 +1827,6 @@ local function parseKey(value)
     return nil
 end
 
--- o: Key, Mode, Size, ShowMode, LayoutOrder, Spot, Callback(state), GetState()
 local function MakeKeyPicker(parent, id, o)
     o = o or {}
 
@@ -2056,8 +1971,6 @@ local function MakeKeyPicker(parent, id, o)
     return kp
 end
 
---// Components \\--
-
 local function AddToggle(c, name, default, opts)
     opts = opts or {}
 
@@ -2146,7 +2059,6 @@ local function AddToggle(c, name, default, opts)
             LayoutOrder = 3,
             Spot = c.Spot,
             Callback = function(state)
-                -- Toggle and Hold drive the switch; Always forces it on.
                 toggle.Set(state, true)
             end,
             GetState = function()
@@ -2221,7 +2133,6 @@ local function AddToggle(c, name, default, opts)
     return toggle
 end
 
--- Dependency box: its children only show while the toggle is on.
 local function AddDependency(c, toggle, opts)
     opts = opts or {}
 
@@ -2252,7 +2163,6 @@ local function AddDependency(c, toggle, opts)
         box.Visible = value
     end)
 
-    -- A divider inside the box keeps the separator tied to the box visibility.
     local child = {Body = box, Spot = c.Spot, HasRows = false}
     if c.HasRows then
         local line = New("Frame", {
@@ -2315,7 +2225,6 @@ local function AddSlider(c, name, minimum, maximum, default, opts)
     local minus = stepButton("-", false)
     local plus = stepButton("+", true)
 
-    -- Taller invisible hit area so the thin track is easy to grab.
     local hit = New("TextButton", {
         Position = UDim2.fromOffset(indent + 24, 32),
         Size = UDim2.new(1, -(indent + 48), 0, 26),
@@ -2340,7 +2249,6 @@ local function AddSlider(c, name, minimum, maximum, default, opts)
 
     Corner(fill, 4)
 
-    -- Blue gradient: the accent at the start, a lighter blue at the head.
     local gradient = New("UIGradient", {}, fill)
     Dyn(gradient, function()
         gradient.Color = ColorSequence.new(Theme.Blue, Theme.Blue:Lerp(Color3.new(1, 1, 1), 0.35))
@@ -2415,7 +2323,6 @@ local function AddSlider(c, name, minimum, maximum, default, opts)
     return data
 end
 
--- Dual slider: two knobs define a low and high value.
 local function AddDualSlider(c, name, minimum, maximum, low, high, opts)
     opts = opts or {}
 
@@ -2813,7 +2720,6 @@ local function AddDropdown(c, name, options, default, opts)
         end
     end)
 
-    -- Enter picks the first match.
     search.FocusLost:Connect(function(enterPressed)
         if not enterPressed then return end
 
@@ -2929,7 +2835,6 @@ local function AddButton(c, name, callback)
     return button
 end
 
--- Standalone keybind row (for example Menu Key).
 local function AddKeyPicker(c, name, key, mode, opts)
     opts = opts or {}
 
@@ -2958,8 +2863,6 @@ local function AddKeyPicker(c, name, key, mode, opts)
     return kp
 end
 
--- Tab box: a bar of tabs aligned left, center or right, with one container per tab.
--- The selected tab is blue, has an element background and an underline.
 local function AddTabBox(c, opts)
     opts = opts or {}
 
@@ -3116,7 +3019,6 @@ local function AddTabBox(c, opts)
     return tabBox
 end
 
--- Sub window: a floating window that hosts any components.
 local function AddSubWindow(c, buttonText, title, opts)
     opts = opts or {}
 
@@ -3234,7 +3136,6 @@ local function AddSubWindow(c, buttonText, title, opts)
     return window
 end
 
--- Listbox with an empty state. Same Get / Set / SetOptions API as a dropdown.
 local function AddListBox(c, height, emptyText, onSelect)
     local row = Row(c, "List", height + 24, 0)
 
@@ -3342,9 +3243,6 @@ local function AddListBox(c, height, emptyText, onSelect)
     }
 end
 
-
---// Settings: sub tabs (Interface / Configs / Theme) \\--
-
 local SubBar = New("Frame", {
     Name = "SettingsSubTabs",
     Size = UDim2.new(1, 0, 0, 30),
@@ -3368,9 +3266,7 @@ local function renderSubTabs()
     end
 end
 
--- Adds a Settings sub-tab. Addons call this through Library.AddSettingsSub.
 local function addSettingsSub(name, order)
-    -- Each sub tab shows the page created with CreatePage("Settings/<name>").
     SettingsPageKeys[name] = "Settings/" .. name
 
     local button = New("TextButton", {
@@ -3402,8 +3298,6 @@ Dyn(SubBar, renderSubTabs)
 
 local applyOverlays
 local applyMobileLayout, MobileCfg
-
---// Overlays: watermark, keybind list, mobile buttons \\--
 
 local function make(class, props, target)
     local obj = Instance.new(class)
@@ -3586,7 +3480,6 @@ task.spawn(function()
         PlaceLabel.Text = game.Name ~= "" and game.Name or ("Place " .. tostring(game.PlaceId))
     end
 
-    -- Game icons are keyed by universe ID (game.GameId), not place ID.
     local url = "https://thumbnails.roblox.com/v1/games/icons?universeIds="
         .. tostring(game.GameId) .. "&size=150x150&format=Png&isCircular=false"
 
@@ -3648,8 +3541,6 @@ Connect(RunService.RenderStepped, function(dt)
         updatePlayers()
     end
 end)
-
--- Keybind list: every keybind with a key, filtered by the selected mode.
 
 local KeybindFrame = make("Frame", {
     Name = "KeybindList",
@@ -3803,7 +3694,6 @@ local function refreshKeybindListNow()
     KbModeButton.Text = KbModes[KbModeIndex] .. "  v"
 end
 
--- Re-run on theme changes so the row colors follow the theme.
 Dyn(KeybindFrame, refreshKeybindListNow)
 
 refreshKeybindList = refreshKeybindListNow
@@ -3830,10 +3720,6 @@ KeybindHeader.InputBegan:Connect(function(input)
         )
     end)
 end)
-
--- Mobile buttons. Size, transparency, click mode and hold times come from
--- Settings > Interface > Mobile Buttons. Transparency 100% hides the buttons
--- but they stay clickable.
 
 local MobileGui = make("Frame", {
     Name = "MobileButtons",
@@ -3942,7 +3828,6 @@ end
 makeDraggable(MobileToggle)
 makeDraggable(MobileLock)
 
--- Hold mode: the timer starts on press and is cancelled by any release or drag.
 MobileToggle.InputBegan:Connect(function(input)
     if not isPress(input) then return end
 
@@ -3997,8 +3882,6 @@ MobileLock.Activated:Connect(function()
     MobileLock.Text = MobileLocked and "Unlock" or "Lock"
 end)
 
--- Menu visibility. The Menu Key picker decides Toggle, Hold, Always or None.
-
 setMenuOpen = function(open)
     if MenuKeyPicker and MenuKeyPicker.Mode == "Always" then
         open = true
@@ -4007,7 +3890,6 @@ setMenuOpen = function(open)
     MenuOpen = open and true or false
     Main.Visible = MenuOpen
 
-    -- Particles belong to the menu: hide them, and drop them when it closes.
     ParticleGui.Enabled = MenuOpen and ParticleState.Enabled
 
     if not MenuOpen then
@@ -4037,10 +3919,6 @@ end
 end
 
 local setParticlesEnabled
-
---// Menu particles \\--
--- Size, speed, rate, spread and color are read every frame, so changes apply
--- to particles already on screen. Custom uses a decal ID you enter.
 
 local setCustomDecal
 
@@ -4222,7 +4100,6 @@ do
             Settings["Particle Spread"].Set(preset.Spread)
             Settings["Particle Color"].Set({preset.Color.R, preset.Color.G, preset.Color.B, 1})
         else
-            -- Custom keeps the sliders as they are and uses the decal ID.
             ParticleState.Mode = "Fall"
             ParticleState.Image = ParticleState.CustomDecal
         end
@@ -4241,15 +4118,9 @@ do
     end
 end
 
---// Settings: Interface, Configs, Theme \\--
-
--- Interface
 do
     local left, right = CreatePage("Settings/Interface", 38)
 
-    -- Scroll bars: card bodies never show one (they grow to fit), so only the
-    -- page and list scroll bars remain. Show Scrollbars hides all of them, and
-    -- scroll frames created later get the same treatment.
     local function styleScroll(obj)
         if not obj:IsA("ScrollingFrame") then
             return
@@ -4336,7 +4207,6 @@ do
         end
     end)
 
-    -- Menu: window look, title and logo. Groups keep related controls together.
     card = Section(right, "Menu", "Settings/Interface")
 
     local windowGroup = AddGroup(card, "Window")
@@ -4360,7 +4230,6 @@ do
         end
     })
 
-
     card = Section(right, "Menu Particles", "Settings/Interface")
 
     local particles = AddToggle(card, "Menu Particles", false, {
@@ -4369,7 +4238,6 @@ do
 
     local particleBox = AddDependency(card, particles)
 
-    -- Gate for the decal box. Shown only while the preset is Custom.
     local customGate = {
         Get = function()
             return ParticleState.Preset == "Custom"
@@ -4438,7 +4306,6 @@ do
         end
     })
 
-    -- Mobile-only card. On PC these settings are not created at all.
     if UIS.TouchEnabled then
         card = Section(right, "Mobile Buttons", "Settings/Interface")
 
@@ -4502,8 +4369,6 @@ do
     end
 end
 
---// Footer \\--
-
 local Footer = New("Frame", {
     Name = "Footer",
     AnchorPoint = Vector2.new(0, 1),
@@ -4555,7 +4420,6 @@ local function renderTabs()
     end
 end
 
--- The visible page is the main tab, or the Settings sub tab.
 switchPage = function()
     Popup.Close()
 
@@ -4621,7 +4485,6 @@ for _, name in ipairs({"Main", "Visuals", "World", "Misc", "Settings"}) do
     TabButtons[name] = button
 end
 
--- Toolbar buttons
 ToolButton(ICON_CONFIG.Toolbar.Home, 4, function() switchTab("Main") end)
 ToolButton(ICON_CONFIG.Toolbar.Settings, 52, function() switchTab("Settings") end)
 ThemeButton("Dark", ICON_CONFIG.Toolbar.Dark, 4)
@@ -4630,7 +4493,6 @@ ThemeButton("Light", ICON_CONFIG.Toolbar.Light, 60)
 switchTab("Main")
 
 do
---// Search \\--
 
 local function searchText(row)
     local pieces = {}
@@ -4723,7 +4585,6 @@ end)
 end
 
 do
---// Config and theme files \\--
 
 local CONFIG_DIR = "SEVERESettings"
 local WINDOW_FILE = CONFIG_DIR .. "/window.json"
@@ -4775,8 +4636,6 @@ local function writeJson(path, data)
     end
 end
 
---// Window position and size \\--
-
 saveWindowState = function()
     if not canFile() then return end
 
@@ -4803,7 +4662,6 @@ local function restoreWindowState()
     refreshScale()
 end
 
--- Drag the header to move the window.
 Header.InputBegan:Connect(function(input)
     if not isPress(input) then return end
 
@@ -4827,8 +4685,6 @@ Header.InputBegan:Connect(function(input)
         end
     end)
 end)
-
--- Corner grip: drag to resize the window.
 
 local Grip = New("TextButton", {
     Name = "ResizeGrip",
@@ -4864,8 +4720,6 @@ Grip.InputBegan:Connect(function(input)
         end
     end)
 end)
-
---// Keyboard: keybinds, listening, menu key \\--
 
 Connect(UIS.InputBegan, function(input, processed)
     if ListeningKey then
@@ -4910,8 +4764,6 @@ Connect(UIS.InputEnded, function(input)
     end
 end)
 
---// Startup \\--
-
 Env.SEVEREUnload = function()
     for _, connection in ipairs(Connections) do
         connection:Disconnect()
@@ -4952,7 +4804,6 @@ setMenuOpen(true)
 
 end
 
--- Public API used by the addons (addons/SaveManager.lua, addons/ThemeManager.lua) and Example.lua.
 return {
     Settings = Settings,
     Pages = Pages,

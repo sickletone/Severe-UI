@@ -1,31 +1,31 @@
--- SEVERE example
--- Showcases every component of the library. The demo pages that used to live
--- in Library.lua are here now. Sub windows are not used in this example.
+local repo = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
 
--- Base URL of this repo. Change it if you fork the library.
-local REPO = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
--- Load the library. It returns a table of functions and settings.
-local Library = loadstring(game:HttpGet(REPO .. "Library.lua"))()
+-- Addons take the library as an argument, so call the returned function with it.
+loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()(Library)
+loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()(Library)
 
--- Load the addons. Each addon returns a function that takes the library.
--- SaveManager adds Settings > Configs. ThemeManager adds Settings > Theme.
-loadstring(game:HttpGet(REPO .. "addons/SaveManager.lua"))()(Library)
-loadstring(game:HttpGet(REPO .. "addons/ThemeManager.lua"))()(Library)
-
--- Every page has two columns, left and right. Each column holds cards.
--- Section(column, title, pageKey) makes a card. Pass the page key it belongs to.
--- The top tabs are Main, Visuals, World, Misc and Settings.
+-- Pages are the top tabs. CreatePage(name, index) returns the left and right columns.
+-- Section(column, title, pageKey) adds a card to a column.
+-- Every Add* function takes a column (or a card, group, tab or dependency row) as its first argument.
 
 --// Main \\--
 
 local mainLeft, mainRight = Library.CreatePage("Main", 0)
 
+-- Cards with toggles, dependencies and nested rows.
 local controls = Library.Section(mainLeft, "Toggles and Dependencies", "Main")
 
--- Toggle: name, default, options.
--- Options: Hint (tooltip), Gear (shows a gear button), OnGear (gear callback),
--- Keybind ({Key, Mode}), Color (color dot), OnColor (color callback), Callback.
+-- Library.AddToggle(column, name, default, options)
+-- Options:
+--   Hint         tooltip text shown on hover
+--   Gear         shows a gear button on the row
+--   OnGear       runs when the gear button is clicked
+--   Keybind      {Key = "KeyName", Mode = "Toggle" | "Hold" | "Always" | "None"}
+--   Color        color of the color dot
+--   OnColor      runs when the color dot changes, OnColor(color, alpha)
+--   Callback     runs when the toggle changes, Callback(value)
 local aim = Library.AddToggle(controls, "Enable Aimbot", true, {
     Hint = "Turns the aimbot on or off",
     Gear = true,
@@ -38,15 +38,21 @@ local aim = Library.AddToggle(controls, "Enable Aimbot", true, {
     end
 })
 
--- AddDependency(column, toggle): the child rows only show while the toggle is on.
+-- Library.AddDependency(column, toggle)
+-- Rows added to the returned column only show while the toggle is on.
 local aimDep = Library.AddDependency(controls, aim)
 
 Library.AddToggle(aimDep, "Sticky Aim", true, {
     Hint = "Stays locked on the same target"
 })
 
--- Slider: name, minimum, maximum, default, options.
--- Options: Precision (decimals), Step, Suffix (text after the value), Sub (indent), Hint, Callback.
+-- Library.AddSlider(column, name, min, max, default, options)
+-- Options:
+--   Precision    number of decimal places
+--   Step         amount each step moves the value
+--   Suffix       text shown after the value, e.g. "%"
+--   Sub          indents the row under its parent
+--   Callback     runs when the value changes, Callback(value)
 Library.AddSlider(aimDep, "Sticky Strength", 0, 100, 50, {
     Precision = 0,
     Suffix = "%",
@@ -56,7 +62,7 @@ Library.AddSlider(aimDep, "Sticky Strength", 0, 100, 50, {
     end
 })
 
--- Color toggle: Color sets the color dot, and OnColor runs when it changes.
+-- Color option on a toggle: the dot sets the color, and OnColor runs on change.
 Library.AddToggle(controls, "Snaplines", false, {
     Hint = "Draws a line to each target",
     Color = Color3.fromRGB(255, 255, 255),
@@ -65,12 +71,17 @@ Library.AddToggle(controls, "Snaplines", false, {
     end
 })
 
--- Groups hold related rows inside a card. Use the group as the column.
+-- Library.AddGroup(column, title)
+-- Returns a group you can use as a column. Rows added to it are grouped inside the card.
 local group = Library.AddGroup(controls, "Grouped Rows")
 Library.AddToggle(group, "Reload Check", false, {Hint = "Pauses while reloading"})
 Library.AddToggle(group, "Mouse Teleport", false, {Hint = "Jumps the cursor to the target"})
 
--- Tab box: Tabs (list), Default (starting tab), Align ("Left" or "Center").
+-- Library.AddTabBox(column, options)
+-- Options:
+--   Tabs     list of tab names
+--   Default  tab shown first
+--   Align    "Left" or "Center"
 -- Call tabs.Tab(name) to get the container for that tab.
 local tabs = Library.AddTabBox(controls, {
     Align = "Center",
@@ -85,7 +96,10 @@ Library.AddSlider(tabs.Tab("NPCs"), "NPC Priority", 0, 10, 3, {Precision = 0})
 
 local targeting = Library.Section(mainRight, "Targeting Inputs", "Main")
 
--- Dropdown: name, list of options, default, options (Hint, Callback(option)).
+-- Library.AddDropdown(column, name, values, default, options)
+-- Options:
+--   Hint      tooltip text
+--   Callback  runs when the selection changes, Callback(option)
 Library.AddDropdown(targeting, "Part", {
     "HumanoidRootPart", "Closest", "Random", "Head", "Torso"
 }, "HumanoidRootPart", {
@@ -95,8 +109,8 @@ Library.AddDropdown(targeting, "Part", {
     end
 })
 
--- Dual slider: name, minimum, maximum, low value, high value, options.
--- Callback receives both values.
+-- Library.AddDualSlider(column, name, min, max, low, high, options)
+-- Callback receives both values, Callback(low, high).
 Library.AddDualSlider(targeting, "Target Range", 0, 1000, 50, 400, {
     Precision = 0,
     Hint = "Minimum and maximum distance to pick targets",
@@ -105,7 +119,8 @@ Library.AddDualSlider(targeting, "Target Range", 0, 1000, 50, 400, {
     end
 })
 
--- Color picker: name, default color, alpha (0 to 1), options (Hint, Callback(color, alpha)).
+-- Library.AddColorPicker(column, name, color, alpha, options)
+-- alpha goes from 0 to 1. Callback(color, alpha) runs when the color changes.
 Library.AddColorPicker(targeting, "FOV Color", Color3.fromRGB(60, 120, 255), 1, {
     Hint = "Color of the FOV circle",
     Callback = function(color, alpha)
@@ -113,7 +128,8 @@ Library.AddColorPicker(targeting, "FOV Color", Color3.fromRGB(60, 120, 255), 1, 
     end
 })
 
--- Key picker: name, default key, mode ("Toggle", "Hold", "Always" or "None"), options.
+-- Library.AddKeyPicker(column, name, key, mode, options)
+-- mode is "Toggle", "Hold", "Always" or "None".
 -- Callback(state) runs when the key state changes.
 Library.AddKeyPicker(targeting, "Action Key", "E", "Toggle", {
     Callback = function(state)
@@ -121,11 +137,15 @@ Library.AddKeyPicker(targeting, "Action Key", "E", "Toggle", {
     end
 })
 
--- List box: height, empty text, onSelect(option).
--- SetOptions replaces the list. Get returns the selected option.
+-- Library.AddListBox(column, height, emptyText, onSelect)
+-- Returns an object with:
+--   SetOptions(list)  replaces the list
+--   Set(option)       selects an option and runs onSelect
+--   Get()             returns the selected option
 local playerList = Library.AddListBox(targeting, 120, "No players", function(option)
     Library.Notify("Selected " .. option, "Player List")
 end)
+
 playerList.SetOptions({"Alpha", "Bravo", "Charlie"})
 
 --// Visuals \\--
@@ -150,6 +170,8 @@ Library.AddDropdown(display, "Text Style", {"Regular", "Bold", "Outline"}, "Regu
 local worldLeft, worldRight = Library.CreatePage("World", 0)
 
 local world = Library.Section(worldLeft, "World", "World")
+
+-- A dependency row is hidden until the toggle above it is on.
 local worldToggle = Library.AddToggle(world, "Enable World Settings", false)
 local worldDep = Library.AddDependency(world, worldToggle)
 Library.AddToggle(worldDep, "Full Brightness", false)
@@ -172,18 +194,19 @@ Library.AddToggle(misc, "Show Notifications", true)
 
 local actions = Library.Section(miscRight, "Actions and Input", "Misc")
 
--- Text box: name, default text, callback(text, enterPressed).
+-- Library.AddTextBox(column, name, default, callback)
+-- callback(text, enterPressed) runs when the text changes or Enter is pressed.
 Library.AddTextBox(actions, "Player Name", "", function(text, enterPressed)
     print("Player Name:", text, enterPressed)
 end)
 
--- Button: name, callback.
+-- Library.AddButton(column, name, callback)
 Library.AddButton(actions, "Show Notification", function()
-    -- Notify(message, title) shows a popup.
+    -- Library.Notify(message, title) shows a popup.
     Library.Notify("Hello from the example", "SEVERE")
 end)
 
--- GetThemeName returns the active theme name.
+-- Library.GetThemeName() returns the active theme name.
 Library.AddButton(actions, "Print Theme", function()
     print("Active theme:", Library.GetThemeName())
 end)
