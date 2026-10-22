@@ -1,10 +1,10 @@
 Severe-UI
 
-A customizable Roblox UI library inspired by Severe External, with support for reusable components, themes, keybinds, and interface customization.
+A customizable Roblox UI library inspired by Severe External, featuring reusable components, built-in themes, keybinds, configuration management, and interface customization.
 
 Quick Install
 
-Load the library directly from GitHub.
+Load Severe-UI directly from GitHub using the following loader:
 
 local repo = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
 
@@ -12,7 +12,7 @@ local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
 Example
 
-Create a page, add a section, and start adding components.
+Create a page, add sections, and start adding components.
 
 local repo = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
 
@@ -20,28 +20,29 @@ local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
 local left, right = Library.CreatePage("Main", 0)
 
-local section = Library.Section(left, "General", "Main")
+local general = Library.Section(left, "General", "Main")
+local settings = Library.Section(right, "Settings", "Main")
 
-Library.AddToggle(section, "Enable Feature", false, {
+Library.AddToggle(general, "Enable Feature", false, {
     Callback = function(value)
         print("Enabled:", value)
     end
 })
 
-Library.AddSlider(section, "Speed", 1, 100, 25, {
+Library.AddSlider(settings, "Speed", 1, 100, 25, {
     Precision = 0,
     Callback = function(value)
         print("Speed:", value)
     end
 })
 
-Library.AddButton(section, "Test", function()
+Library.AddButton(general, "Test Notification", function()
     Library.Notify("Button clicked", "General")
 end)
 
 Components
 
-Severe-UI includes the following components.
+Severe-UI includes the following components:
 
 Component| Description
 Toggle| Enable or disable a setting
@@ -53,59 +54,85 @@ Key Picker| Assign a key and activation mode
 Text Box| Accept text input
 Button| Run a callback when clicked
 List Box| Display and select items
-Group| Organize related components
+Group| Organize related controls
 Tab Box| Switch between nested tabs
-Dependency| Show controls based on a toggle
+Dependency| Display controls based on a toggle
 Sub-Window| Open a separate configurable window
 
 Pages and Sections
 
-Pages have two columns, allowing sections and components to be organized side by side.
+Pages contain two columns, allowing components to be organized side by side.
 
 local left, right = Library.CreatePage("Main", 0)
 
 local general = Library.Section(left, "General", "Main")
 local settings = Library.Section(right, "Settings", "Main")
 
-"CreatePage" accepts a page name and a top offset. "Section" accepts a column, section title, and page name.
+- "CreatePage(name, topOffset)" creates a page and returns its left and right columns.
+- "Section(column, title, pageName)" creates a section inside a column.
 
 Toggle
+
+Toggles enable or disable settings and support optional controls and callbacks.
 
 local toggle = Library.AddToggle(section, "Enable Feature", false, {
     Hint = "Enable or disable the feature",
     Callback = function(value)
-        print(value)
+        print("Enabled:", value)
     end
 })
 
 toggle.Set(true)
 print(toggle.Get())
 
-Additional options include "Gear", "OnGear", "Keybind", "Color", and "OnColor".
+Options
+
+Option| Description
+"Hint"| Additional information about the toggle
+"Gear"| Enables the optional gear control
+"OnGear"| Callback for the gear control
+"Keybind"| Optional keybind configuration
+"Color"| Optional color control
+"OnColor"| Callback for color changes
+"Callback"| Called when the toggle value changes
 
 Slider
+
+Sliders select numeric values within a specified range.
 
 Library.AddSlider(section, "Speed", 0, 100, 50, {
     Precision = 0,
     Step = 1,
     Suffix = "%",
     Callback = function(value)
-        print(value)
+        print("Speed:", value)
     end
 })
 
-Options include "Precision", "Step", "Suffix", "Sub", and "Callback".
+Options
+
+Option| Description
+"Precision"| Number of decimal places
+"Step"| Value increment
+"Suffix"| Text displayed after the value
+"Sub"| Additional slider configuration
+"Callback"| Called when the value changes
 
 Dual Slider
+
+Dual sliders select two values within a shared range.
 
 Library.AddDualSlider(section, "Range", 0, 100, 20, 80, {
     Precision = 0,
     Callback = function(minimum, maximum)
-        print(minimum, maximum)
+        print("Minimum:", minimum)
+        print("Maximum:", maximum)
     end
 })
 
 Dropdown
+
+Dropdowns let users select an option from a list.
 
 Library.AddDropdown(section, "Mode", {
     "Default",
@@ -113,11 +140,15 @@ Library.AddDropdown(section, "Mode", {
     "Quality"
 }, "Default", {
     Callback = function(option)
-        print(option)
+        print("Selected:", option)
     end
 })
 
+The callback receives the selected option.
+
 Color Picker
+
+Color pickers support color selection and transparency.
 
 Library.AddColorPicker(
     section,
@@ -135,13 +166,15 @@ The transparency argument ranges from "0" to "1".
 
 Key Picker
 
+Key pickers let users assign a key and choose an activation mode.
+
 Library.AddKeyPicker(section, "Activation Key", "E", "Toggle", {
     Callback = function(state)
-        print(state)
+        print("State:", state)
     end
 })
 
-Supported activation modes:
+Supported activation modes
 
 - "Toggle"
 - "Hold"
@@ -150,35 +183,56 @@ Supported activation modes:
 
 Text Box
 
+Text boxes accept user input.
+
 Library.AddTextBox(section, "Username", "", function(text, enterPressed)
-    print(text, enterPressed)
+    print("Text:", text)
+    print("Enter pressed:", enterPressed)
 end)
+
+The callback receives the current text and whether Enter was pressed.
 
 Button
 
+Buttons execute a callback when clicked.
+
 Library.AddButton(section, "Run", function()
-    Library.Notify("Action completed", "General")
+    Library.Notify("Action completed", "Success")
 end)
 
 List Box
+
+List boxes display selectable items and provide methods to update or retrieve the selection.
 
 local list = Library.AddListBox(
     section,
     120,
     "No items available",
     function(option)
-        print(option)
+        print("Selected:", option)
     end
 )
 
-list.SetOptions({"First", "Second", "Third"})
+list.SetOptions({
+    "First",
+    "Second",
+    "Third"
+})
+
 list.Set("First")
 
 print(list.Get())
 
-Available methods: "SetOptions", "Set", and "Get".
+Available methods
+
+Method| Description
+"SetOptions(options)"| Updates the available items
+"Set(option)"| Sets the selected item
+"Get()"| Returns the current selection
 
 Groups and Dependencies
+
+Groups
 
 Groups organize related controls inside a section.
 
@@ -187,7 +241,9 @@ local group = Library.AddGroup(section, "Advanced")
 Library.AddToggle(group, "Option A", false)
 Library.AddToggle(group, "Option B", true)
 
-Dependencies display additional controls while their parent toggle is enabled.
+Dependencies
+
+Dependencies display additional controls based on the state of a parent toggle.
 
 local parent = Library.AddToggle(section, "Enable Advanced", false)
 
@@ -197,22 +253,36 @@ Library.AddSlider(dependent, "Intensity", 0, 100, 50, {
     Precision = 0
 })
 
+The dependent controls are displayed while the parent toggle is enabled.
+
 Tab Boxes
 
-Tab boxes let users switch between groups of controls within a section.
+Tab boxes let users switch between groups of controls inside a section.
 
 local tabs = Library.AddTabBox(section, {
     Align = "Center",
-    Tabs = {"General", "Advanced"},
+    Tabs = {
+        "General",
+        "Advanced"
+    },
     Default = "General"
 })
 
 Library.AddToggle(tabs.Tab("General"), "Enabled", false)
-Library.AddSlider(tabs.Tab("Advanced"), "Intensity", 0, 100, 50)
+
+Library.AddSlider(
+    tabs.Tab("Advanced"),
+    "Intensity",
+    0,
+    100,
+    50
+)
+
+Use "tabs.Tab("TabName")" to access a tab's container.
 
 Sub-Windows
 
-Create a separate window with its own controls.
+Sub-windows create separate windows with their own controls.
 
 local window = Library.AddSubWindow(
     section,
@@ -225,38 +295,55 @@ local window = Library.AddSubWindow(
 )
 
 Library.AddToggle(window.Container, "Enabled", false)
-Library.AddSlider(window.Container, "Speed", 0, 100, 50)
+
+Library.AddSlider(
+    window.Container,
+    "Speed",
+    0,
+    100,
+    50
+)
+
+Options
+
+Option| Description
+"Width"| Window width
+"Height"| Window height
+
+Add components to "window.Container" to place them inside the sub-window.
 
 Themes
 
-Severe-UI includes several built-in theme presets.
+Severe-UI includes built-in theme presets:
 
-- Dark
-- Light
-- Midnight
-- Ocean
-- Rose
-- Forest
-- iOS 27 Glass
+- "Dark"
+- "Light"
+- "Midnight"
+- "Ocean"
+- "Rose"
+- "Forest"
+- "iOS 27 Glass"
 
-Change the theme using:
+Change Theme
 
 Library.SetTheme("Midnight")
 
-Set a custom accent color:
+Custom Accent Color
 
 Library.SetTheme(
     "Dark",
     Color3.fromRGB(30, 125, 255)
 )
 
-Display a notification:
+Notifications
+
+Display a notification with an optional title.
 
 Library.Notify("Settings saved", "Success")
 
 Theme Manager
 
-The optional Theme Manager adds controls for changing presets, customizing individual colors, and saving, loading, or deleting themes.
+The optional Theme Manager addon provides controls for changing theme presets, customizing individual colors, and saving, loading, or deleting themes.
 
 local repo = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
 
@@ -266,7 +353,7 @@ loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()(Library)
 
 Save Manager
 
-The optional Save Manager adds configuration management, including saving, loading, overwriting, renaming, deleting, and autoloading configurations.
+The optional Save Manager addon provides configuration management, including saving, loading, overwriting, renaming, deleting, and autoloading configurations.
 
 local repo = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
 
@@ -274,13 +361,22 @@ local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
 loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()(Library)
 
-Load both managers by calling each addon's returned function with "Library".
+Loading Both Addons
 
-The managers use the library's settings and file APIs. Persistent file operations depend on the execution environment supporting the required file functions.
+Load both addons by calling each addon's returned function with "Library".
+
+local repo = "https://raw.githubusercontent.com/sickletone/Severe-UI/main/"
+
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+
+loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()(Library)
+loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()(Library)
+
+The managers use the library's settings and file APIs. Persistent file operations depend on whether the execution environment supports the required file functions.
 
 Unload
 
-The library provides an unload function through the execution environment.
+Severe-UI provides an unload function through the execution environment.
 
 local env = (type(getgenv) == "function" and getgenv()) or _G
 
@@ -292,18 +388,17 @@ This disconnects tracked connections and destroys the library's UI and related v
 
 Icons
 
-Severe-UI uses Molto icons.
-
 - "Molto" (https://molto.pages.dev)
-- "Molto Icon Library Page" (https://molto.pages.dev/icons)
+- "Molto Icon Library" (https://molto.pages.dev/icons)
+
+Check the library source to confirm which icon provider is currently integrated.
 
 Repository
 
-"GitHub — Severe-UI" (https://github.com/sickletone/Severe-UI)
-
-"Download Source Code" (https://github.com/sickletone/Severe-UI/archive/refs/heads/main.zip)
+- "Severe-UI on GitHub" (https://github.com/sickletone/Severe-UI)
+- "Download Source Code" (https://github.com/sickletone/Severe-UI/archive/refs/heads/main.zip)
 
 Credits
 
 - Severe — Original UI inspiration.
-- Molto — Icon Provider.
+- Molto — Icon provider, if used by the current implementation.
